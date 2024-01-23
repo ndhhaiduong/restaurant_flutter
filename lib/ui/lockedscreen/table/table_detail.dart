@@ -11,6 +11,8 @@ import '../../../data/models/table_detail.dart';
 import '../confirm_order.dart';
 import '../product/product_detail.dart';
 import 'table_view.dart';
+import 'package:flutter_login/data/classes/table.dart' as tb;
+import 'table.dart';
 import '../../widgets/custom_widget.dart';
 import '../../../utils/popUp.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +26,8 @@ import '../../../data/classes/category.dart' as cat;
 import '../../../data/models/category.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+
+import 'package:flutter_login/ui/common/api.dart';
 
 class TableDetailPage extends StatefulWidget {
   @override
@@ -67,13 +71,23 @@ class _TableDetailPageState extends State<TableDetailPage> {
       final data = jsonDecode(userData);
       companyId = (data['companyId']);
     }
-    final response = await http.get(Uri.parse(
-        apiURLV2 + '/product/allProducts?companyId=$companyId&page=$pageId'));
-    Iterable list = json.decode(response.body)['data'];
-    _dataList = list.map((model) => Product.fromJson(model)).toList();
-    setState(() {
-      dataList = _dataList;
-    });
+    // final response = await http.get(Uri.parse(
+    //     apiURLV2 + '/product/allProducts?companyId=$companyId&page=$pageId'));
+    // Iterable list = json.decode(response.body)['data'];
+    // _dataList = list.map((model) => Product.fromJson(model)).toList();
+    // setState(() {
+    //   dataList = _dataList;
+    // });
+
+    var productListInfo = _prefs.getString("product_list_info") ?? "";
+    if(productListInfo != "") {
+        setState(() {
+          Iterable list = json.decode(productListInfo);
+          dataList = list.map((model) => Product.fromJson(model)).toList();
+          print("get productListInfo from local");
+        });
+    }
+
   }
 
   void initState() {
@@ -140,8 +154,11 @@ class _TableDetailPageState extends State<TableDetailPage> {
 
   createControllers(products) {
     for (var i = 0; i < products.length; i++) {
-      _controllerQty.add(TextEditingController());
+      //_controllerQty.add(TextEditingController());
       //_itemCount.add(i);
+      var controller = TextEditingController();
+      controller.text = '1';
+      _controllerQty.add(controller);
     }
   }
 
@@ -166,6 +183,11 @@ class _TableDetailPageState extends State<TableDetailPage> {
     final id = widget.id;
     final _tblDetail = Provider.of<TableDetailModel>(context);
     final _product = Provider.of<ProductModel>(context);
+
+    final api = Provider.of<AppAPI>(context);
+    
+   print("----------------------------datalist--------------------------------");
+   print(dataList);
 
     createControllers(dataList);
 
@@ -221,7 +243,7 @@ class _TableDetailPageState extends State<TableDetailPage> {
         //   ],
         // ),
         //drawer: AppDrawer(),
-        bottomNavigationBar: (listOrder != null && listOrder.length > 0)
+        bottomNavigationBar: (listOrder.isNotEmpty)
             ? BottomAppBar(
                 color: Colors.lightBlueAccent,
                 child: new Row(
@@ -248,6 +270,8 @@ class _TableDetailPageState extends State<TableDetailPage> {
                           );
                           //ScaffoldMessenger.of(context).showSnackBar(snackbar);
                           _tblDetail.removeTempOrder(widget.id).then((result) {
+                            print('result');
+                            print(result);
                             if (result) {
                               setState(() {
                                 listOrder = [];
@@ -298,14 +322,63 @@ class _TableDetailPageState extends State<TableDetailPage> {
                       margin: EdgeInsets.all(12),
                       child: new InkResponse(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ConfirmOrderPage(
-                                tableId: widget.id,
-                              ),
-                            ),
-                          );
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //     builder: (context) => ConfirmOrderPage(
+                          //       tableId: widget.id,
+                          //     ),
+                          //   ),
+                          // );
+                          _confirmProduct.confirmOrder(widget.id).then((result) async {
+                            if (result) {
+                              //_scaffoldKey.currentState.hideCurrentSnackBar();
+                              Fluttertoast.showToast(
+                                msg: "Xác nhận thành công",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.CENTER,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0
+                              );
+                              //Navigator.of(context).pushReplacementNamed('/table');
+                              // update total cart
+                              // SharedPreferences _prefs = await SharedPreferences.getInstance();
+
+                              // final response2 = await http
+                              //   .get(Uri.parse(apiURLV2 + '/table/?company_id=$companyId&page=1'));
+                              //   Iterable list = json.decode(response2.body);
+                              //   var _dataList = list.map((model) => tb.Table.fromJson(model)).toList();
+                        
+                              //   var _save = json.encode(_dataList);
+                              //   print("Data table save : $_save");
+                              //   _prefs.setString("table_info", _save);
+                              api.updateLocalData();
+                               
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => TablePage(),
+                                  ),
+                                );
+                            } 
+                            else {
+                                //showAlertPopup(context, 'Thông báo', 'Lỗi');
+                                Fluttertoast.showToast(
+                                  msg: "Lỗi",
+                                  toastLength: Toast.LENGTH_SHORT,
+                                  gravity: ToastGravity.CENTER,
+                                  timeInSecForIosWeb: 1,
+                                  backgroundColor: Colors.red,
+                                  textColor: Colors.white,
+                                  fontSize: 16.0
+                                );
+                            } 
+                              
+                            //Navigator.of(context).pushReplacementNamed('/table-detail/' + tableId.toString());
+                        });
+                          
                         },
                         child: new Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -417,9 +490,7 @@ class _TableDetailPageState extends State<TableDetailPage> {
                     //controller: _controllerTab,
                     children: List<Widget>.generate(_allCategories.length,
                         (int index) {
-                      // print( '_product.productList.length');
-                      // print( _product.productList.length);
-                      //return Text(_allCategories[index].id.toString());
+
 
                       if (_allCategories[index].id == 0)
                         lProducts = _product.productList;
@@ -473,7 +544,14 @@ class _TableDetailPageState extends State<TableDetailPage> {
   }
 
   Widget _renderTableView(products, listOrder, categoryId) {
-    final _tblDetail = Provider.of<TableDetailModel>(context, listen: false);
+    final _tblDetail = Provider.of<TableDetailModel>(context);
+    
+    print('ffff');
+    print(products);
+
+    print('length');
+    print(products.length);
+    
     if (products.length != 0) {
       // if(categoryId == 0) {
       // }
@@ -640,15 +718,19 @@ class _TableDetailPageState extends State<TableDetailPage> {
                         ])) :Container(),
                         Positioned(
                           top: 15,
-                          right: 100,
+                          right: 0,
                           child: Container(
                             child: IconButton(
                               icon: const Icon(Icons.add_circle),
                               onPressed: () {
                                 // cubit.adding(widget.product);setState(() {
-                                _itemCount++;
-                                _controllerQty[index].text =
-                                    _itemCount.toString();
+                                // _itemCount++;
+                                // _controllerQty[index].text =
+                                //     _itemCount.toString();
+
+                                int currentValue = int.tryParse(_controllerQty[index].text) ?? 0;
+                                _controllerQty[index].text = (currentValue + 1).toString();
+                                
                               },
                             ),
                           ),
@@ -679,16 +761,20 @@ class _TableDetailPageState extends State<TableDetailPage> {
                         ),
                         Positioned(
                           top: 15,
-                          right: 0,
+                          right: 100,
                           child: Container(
                             child: IconButton(
                               onPressed: () {
                                 //setState(() {
-                                _itemCount > 1
-                                    ? _itemCount--
-                                    : _itemCount = _itemCount;
-                                _controllerQty[index].text =
-                                    _itemCount.toString();
+                                // _itemCount > 1
+                                //     ? _itemCount--
+                                //     : _itemCount = _itemCount;
+                                // _controllerQty[index].text =
+                                //     _itemCount.toString();
+                                int currentValue = int.tryParse(_controllerQty[index].text) ?? 0;
+                                if (currentValue > 0) {
+                                  _controllerQty[index].text = (currentValue - 1).toString();
+                                }
                               },
                               icon: const Icon(
                                 Icons.remove_circle,
@@ -746,162 +832,7 @@ class _TableDetailPageState extends State<TableDetailPage> {
                       ],
                     ),
                   ),
-            // new Card(
-            //color: Colors.blueGrey.shade200,
-            // elevation: 5.0,
-            // child: Padding(
-            //   padding: const EdgeInsets.all(4.0),
-            //   child: Row(
-            //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            //     mainAxisSize: MainAxisSize.max,
-            //     children: [
-            //       Image(
-            //         height: 80,
-            //         width: 80,
-            //         image: NetworkImage(img),
-            //       ),
-            //       // Container(
-            //       //   width: 80,
-            //       //   height: 80.0,
-            //       //   decoration: new BoxDecoration(
-            //       //     //shape: BoxShape.circle,
-            //       //     image: new DecorationImage(
-            //       //       fit: BoxFit.cover,
-            //       //       image: NetworkImage(img),
-            //       //     ),
-            //       //   ),
-            //       // ),
-            //       SizedBox(
-            //         width: 160,
-            //         child: Column(
-            //           crossAxisAlignment: CrossAxisAlignment.start,
-            //           children: [
-            //             const SizedBox(
-            //               height: 5.0,
-            //             ),
-            //             RichText(
-            //               overflow: TextOverflow.ellipsis,
-            //               maxLines: 1,
-            //               text: TextSpan(
-            //                   text: 'Name: ',
-            //                   style: TextStyle(
-            //                       color: Colors.blueGrey.shade800,
-            //                       fontSize: 16.0),
-            //                   children: [
-            //                     TextSpan(
-            //                         text: '${product.productName}\n',
-            //                         style: const TextStyle(
-            //                             fontWeight: FontWeight.bold)),
-            //                   ]),
-            //             ),
-            //             // TextField(
-            //             //   //obscureText: true,
-            //             //   controller: _controllerQty[index],
-            //             //   decoration: InputDecoration(
-            //             //     border: OutlineInputBorder(),
-            //             //     labelText: 'Số lượng',
-            //             //   ),
-            //             //   style: TextStyle(color: Colors.black),
-            //             // ),
-            //             RichText(
-            //               maxLines: 1,
-            //               text: TextSpan(
-            //                   text: 'Price: ' r"",
-            //                   style: TextStyle(
-            //                       color: Colors.blueGrey.shade800,
-            //                       fontSize: 16.0),
-            //                   children: [
-            //                     TextSpan(
-            //                         text:
-            //                             '${product.price.toString().replaceAllMapped(new RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}\n',
-            //                         style: const TextStyle(
-            //                             fontWeight: FontWeight.bold)),
-            //                   ]),
-            //             ),
-            //           ],
-            //         ),
-            //       ),
-            //       ElevatedButton(
-            //           style: ElevatedButton.styleFrom(
-            //               primary: Colors.blueGrey.shade900),
-            //           onPressed: () {
-            //             //saveData(index);
-            //             print(_controllerQty[index].text);
-            //             print(product.id);
-
-            //             final snackbar = SnackBar(
-            //               duration: Duration(seconds: 4),
-            //               content: Row(
-            //                 children: <Widget>[
-            //                   CircularProgressIndicator(),
-            //                   Text("  Đặt món...")
-            //                 ],
-            //               ),
-            //             );
-            //             ScaffoldMessenger.of(context)
-            //                 .showSnackBar(snackbar);
-            //             _tblDetail
-            //                 .addItem(
-            //                     widget.id,
-            //                     product.id,
-            //                     num.parse(_controllerQty[index].text),
-            //                     product.price)
-            //                 .then((result) {
-            //               if (result)
-            //                 showAlertPopup(context, 'Thông báo',
-            //                     'Đặt món thành công');
-            //               else
-            //                 showAlertPopup(
-            //                     context, 'Thông báo', 'Lỗi đặt món');
-            //             });
-            //           },
-            //           child: const Text('Thêm món')),
-            //     ],
-            //   ),
-            // ),
-            // )
-            // new Container(
-            //     padding: EdgeInsets.all(6),
-            //     //margin: EdgeInsets.all(10),
-            //     decoration: BoxDecoration(
-            //       border: Border(
-            //         //top: BorderSide(width: 16.0, color: Colors.lightBlue.shade50),
-            //         bottom: BorderSide(width: 1.0, color: Colors.black12),
-            //       ),
-            //       //borderRadius: BorderRadius.circular(7),
-            //     ),
-            //     //child: Slidable(
-
-            //     child: ListTile(
-            //       leading: new Container(
-            //         width: 120.0,
-            //         //height: 80.0,
-            //         decoration: new BoxDecoration(
-            //           //shape: BoxShape.circle,
-            //           image: new DecorationImage(
-            //             fit: BoxFit.cover,
-            //             image: NetworkImage(img),
-            //           ),
-            //         ),
-            //       ),
-            //       // title: Text(i.productName),
-            //       title: TextField(
-            //         //obscureText: true,
-            //         //controller: _controllerQty[++index],
-            //         decoration: InputDecoration(
-            //           border: OutlineInputBorder(),
-            //           labelText: 'Số lượng',
-            //         ),
-            //       ),
-            //       subtitle: Text(product.price
-            //           .toString()
-            //           .replaceAllMapped(
-            //               new RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            //               (Match m) => '${m[1]},')),
-            //     ),
-
-            //     //),
-            //   )
+            
           );
         },
       );

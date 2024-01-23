@@ -80,4 +80,22 @@ class AppAPI extends ChangeNotifier {
     notifyListeners();
     return _tableList;
   }
+
+  Future updateLocalData() async {
+    var companyId = 0;
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    var userData = _prefs.getString("user_data") ?? "";
+  			if(userData != ""){
+  				final data = jsonDecode(userData);
+  				companyId = (data['companyId']);
+  			}
+    final response2 = await http
+    .get(Uri.parse(apiURLV2 + '/table/?company_id=$companyId&page=1'));
+    Iterable list = json.decode(response2.body);
+    var _dataList = list.map((model) => tb.Table.fromJson(model)).toList();
+
+    var _save = json.encode(_dataList);
+    print("Data table save call from function : $_save");
+    _prefs.setString("table_info", _save);
+  }
 }

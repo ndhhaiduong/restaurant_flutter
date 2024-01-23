@@ -9,6 +9,7 @@ import 'dart:convert';
 
 //import '../classes/Product.dart';
 import '../../constants.dart';
+import 'package:flutter_login/data/classes/print.dart';
 
 class TableDetailModel extends ChangeNotifier {
   List<Product> _productList = [];
@@ -57,7 +58,6 @@ class TableDetailModel extends ChangeNotifier {
   }
 
   Future fetchProductsByTable(num tableId) async {
-    
     final response =
         await http.get(Uri.parse(apiURLV2 + '/table/tableByID?id=$tableId'));
     print(Uri.parse(apiURLV2 + '/table/tableByID?id=$tableId'));
@@ -70,6 +70,27 @@ class TableDetailModel extends ChangeNotifier {
     _tableName = json.decode(response.body)['table_name'];
     _areaName = json.decode(response.body)['area_name'];
     _productList = list.map((model) => Product.fromJson(model)).toList();
+
+    // get product print
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    var qty = _prefs.getString("totalQty") ?? "";
+    if (qty != "") {
+      final response2 = await http
+          .get(Uri.parse(apiURLV2 + '/notify/productInTable?tableID=$tableId'));
+      Iterable list2 = json.decode(response2.body)['results'];
+
+      print(apiURLV2 + '/notify/productInTable?tableID=$tableId');
+
+      var _productListPrint =
+          list2.map((model) => Print.fromJson(model)).toList();
+
+      num totalQty = _productListPrint.fold(0, (sum, item) => sum + item.qty);
+
+      print("=======================================totalQty");
+      print(totalQty);
+
+      _prefs.setString("totalQty", totalQty.toString());
+    }
 
     notifyListeners();
     return _productList;
@@ -86,7 +107,7 @@ class TableDetailModel extends ChangeNotifier {
         'product_id': productId,
       }),
     );
-   
+
     _productList.removeWhere((item) => item.id == productId);
     notifyListeners();
     return true;
@@ -96,7 +117,7 @@ class TableDetailModel extends ChangeNotifier {
     final response = await http.get(Uri.parse(
         apiURLV2 + '/product/allTempProductsBytableId?tableId=$tableId'));
     //await Future.delayed(Duration(seconds: 2));
-    
+
     _productOrdertemp = json.decode(response.body);
     notifyListeners();
     return _productOrdertemp;
@@ -114,8 +135,9 @@ class TableDetailModel extends ChangeNotifier {
         'table_id': tableId,
       }),
     );
-   
+
     _productOrdertemp = [];
+    _totals = 0;
     notifyListeners();
     return true;
   }
@@ -148,11 +170,10 @@ class TableDetailModel extends ChangeNotifier {
       }),
     );
 
-    
-    _productList[
-        _productList.indexWhere((element) => element.id == productId)].qty = qty;
-    _productList[
-        _productList.indexWhere((element) => element.id == productId)].note = note;
+    _productList[_productList.indexWhere((element) => element.id == productId)]
+        .qty = qty;
+    _productList[_productList.indexWhere((element) => element.id == productId)]
+        .note = note;
     //_totals += qty;
     notifyListeners();
     return true;
@@ -169,12 +190,12 @@ class TableDetailModel extends ChangeNotifier {
       companyId = (data['companyId']);
     }
     var note = '';
-     print("tableId:"  + tableId.toString());
+    print("tableId:" + tableId.toString());
     print("productId" + productId.toString());
     print("qty" + qty.toString());
     print("price" + price.toString());
     print("companyId" + companyId.toString());
-    
+
     print(apiURLV2 + '/order/orderTempMenu');
     try {
       http.Response response = await http.post(
@@ -191,17 +212,14 @@ class TableDetailModel extends ChangeNotifier {
           'company_id': companyId
         }),
       );
-      
     } catch (e) {
       print(e);
     }
     //await Future.delayed(Duration(seconds: 3));
-    
-    //print(json.decode(response.body));
 
-   
+    //print(json.decode(response.body));
     _totals += qty;
-   
+
     notifyListeners();
     return true;
   }

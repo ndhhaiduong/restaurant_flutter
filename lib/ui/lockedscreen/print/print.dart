@@ -24,6 +24,8 @@ import 'package:tiengviet/tiengviet.dart';
 import 'package:dropdown_button2/src/dropdown_button2.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class PrintPage extends StatefulWidget {
   PrintPage({required this.tableId, required this.companyId, this.tableName,  this.areaName});
   final num tableId;
@@ -75,6 +77,8 @@ class _PrintPageState extends State<PrintPage> {
         items.add(element.printName);
       });
     }
+
+    
     
     print(items);
     var _productToPrint = _printOrder.productIncludePrint;

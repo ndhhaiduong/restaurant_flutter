@@ -119,6 +119,7 @@ class _MoveTablePageState extends State<MoveTablePage> {
     final _tbl = Provider.of<TableModel>(
       context,
     );
+    final api = Provider.of<AppAPI>(context);
     if (_tbl.tableList == null) {
       return Container(
         height: MediaQuery.of(context).size.height / 2,
@@ -155,6 +156,7 @@ class _MoveTablePageState extends State<MoveTablePage> {
                         _tbl.moveTable(widget.tableId, i.id).then((result) {
                           if (result) {
                             //_scaffoldKey.currentState.hideCurrentSnackBar();
+                            api.updateLocalData();
                             Navigator.of(context)
                                 .pushReplacementNamed('/table');
                           } else {

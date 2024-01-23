@@ -17,6 +17,8 @@ import '../../ui/layout/loading.dart';
 import 'package:flutter_login/data/classes/table.dart' as tb;
 import '../../../data/models/table.dart';
 import 'package:http/http.dart' as http;
+import '../../../data/classes/product.dart';
+
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
@@ -28,6 +30,7 @@ class _HomeState extends State<Home> {
   num companyId = 0;
   List<UserV2> users = [];
   bool isLoading = true;
+  List<dynamic> dataList = [];
   @override
   void initState() {
     super.initState();
@@ -43,44 +46,49 @@ class _HomeState extends State<Home> {
         Map<String, dynamic> data = jsonDecode(userData);
 
         companyId = (data['companyId']);
-        
       }
       var dashboard = _prefs.getString("dashboard") ?? "";
-      if (dashboard != "") { 
+      if (dashboard != "") {
         setState(() {
-            isLoading = false;
-            Iterable list = json.decode(dashboard);
-            _dashboard = list.map((model) => Dashboard.fromJson(model)).toList();
-            
-            print('_dashboard home get from api');
-            print(_dashboard);
+          isLoading = false;
+          Iterable list = json.decode(dashboard);
+          _dashboard = list.map((model) => Dashboard.fromJson(model)).toList();
 
-            
-            
-          });
+          print('_dashboard home get from api');
+          print(_dashboard);
+        });
+        print(apiURLV2 + '/table/?company_id=$companyId&page=1');
 
-          final response = await http.get(
-                Uri.parse(apiURLV2 + '/table/?company_id=$companyId&page=1'));
-            Iterable list = json.decode(response.body);
-            var _dataList = list.map((model) => tb.Table.fromJson(model)).toList();
+        final response = await http
+            .get(Uri.parse(apiURLV2 + '/table/?company_id=$companyId&page=1'));
+        Iterable list = json.decode(response.body);
+        var _dataList = list.map((model) => tb.Table.fromJson(model)).toList();
 
-            var _save = json.encode(_dataList);
-            print("Data table save : $_save");
-            _prefs.setString("table_info", _save);
-      }
-      else {
+        var _save = json.encode(_dataList);
+        print("Data table save : $_save");
+        _prefs.setString("table_info", _save);
+
+        // save list product
+        final res = await http.get(Uri.parse(
+            apiURLV2 + '/product/allProducts?companyId=$companyId&page=1'));
+        Iterable ls = json.decode(res.body)['data'];
+        dataList = ls.map((model) => Product.fromJson(model)).toList();
+
+        var _dataProduct = json.encode(dataList);
+        print("_dataProduct table save : $_dataProduct");
+        _prefs.setString("product_list_info", _dataProduct);
+      } else {
         DashboardAPI.getTables(companyId).then((response) {
           setState(() {
             Iterable list = json.decode(response.body);
-            _dashboard = list.map((model) => Dashboard.fromJson(model)).toList();
-  
+            _dashboard =
+                list.map((model) => Dashboard.fromJson(model)).toList();
+
             print('_dashboard home get from api');
             print(_dashboard);
           });
         });
       }
-      
-      
     } catch (e) {
       print(e);
     }

@@ -23,6 +23,7 @@ class ConfirmOrderModel extends ChangeNotifier {
       return [];
     }
   }
+
   List<SelectPrint> get printList {
     if (_selectPrint != null) {
       return List.from(_selectPrint);
@@ -54,14 +55,15 @@ class ConfirmOrderModel extends ChangeNotifier {
   }
 
   Future fetchOrderByTable(num tableId) async {
-    final response =
-        await http.get(Uri.parse(apiURLV2 + '/table/productTempOfTable?id=$tableId'));
-    //await Future.delayed(Duration(seconds: 2));
+    final response = await http
+        .get(Uri.parse(apiURLV2 + '/table/productTempOfTable?id=$tableId'));
+
     Iterable list = json.decode(response.body)['results'];
 
     print(json.decode(response.body)['results']);
     _productList = list.map((model) => Product.fromJson(model)).toList();
-    //print(_productList);
+
+    
 
     notifyListeners();
     return _productList;
@@ -101,27 +103,38 @@ class ConfirmOrderModel extends ChangeNotifier {
 
   // Print order here
   Future fetchPrintByTable(num tableId) async {
-    final response =
-        await http.get(Uri.parse(apiURLV2 + '/notify/productInTable?tableID=$tableId'));
+    final response = await http
+        .get(Uri.parse(apiURLV2 + '/notify/productInTable?tableID=$tableId'));
     Iterable list = json.decode(response.body)['results'];
     print(list);
     print(Uri.parse(apiURLV2 + '/notify/productInTable?tableID=$tableId'));
-    
+
     //_productIncludePrint = json.decode(response.body)['results'];
     // //print(json.decode(response.body)['results']);
     // _areaName = json.decode(response.body)['area_name'];
     _productListPrint = list.map((model) => Print.fromJson(model)).toList();
     _productIncludePrint = _productListPrint;
-    // print(_productList);
+    
+    num totalQty = _productListPrint.fold(0, (sum, item) => sum + item.qty);
+
+    
+    
+
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+
+    _prefs.setString("totalQty", totalQty.toString());
+    
+    
     notifyTime = json.decode(response.body)['notify_times'];
     notifyListeners();
     return _productListPrint;
     //return [];
   }
+
   // Get print
   Future getPrint(num companyId) async {
-    final response =
-        await http.get(Uri.parse(apiURLV2 + '/notify/printByCompany?company_id=$companyId'));
+    final response = await http.get(
+        Uri.parse(apiURLV2 + '/notify/printByCompany?company_id=$companyId'));
     Iterable list = json.decode(response.body)['printers'];
 
     _selectPrint = list.map((model) => SelectPrint.fromJson(model)).toList();

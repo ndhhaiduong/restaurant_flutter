@@ -131,6 +131,7 @@ class _ReservedTablePageState extends State<ReservedTablePage> {
     final _tbl = Provider.of<TableModel>(
       context,
     );
+    final api = Provider.of<AppAPI>(context);
     if (_tbl.tableList == null) {
       return Container(
         height: MediaQuery.of(context).size.height / 2,
@@ -153,6 +154,7 @@ class _ReservedTablePageState extends State<ReservedTablePage> {
                       //onPressed: (){ Navigator.of(context).pushNamed('/detail/${x.name}');},
                       //onLongPressed: (){openPokemonshortDetail(x);}
                       onTap: () {
+                        api.updateLocalData();
                         Navigator.of(context)
                             .pushNamed('/table-detail/${i.id}');
                       },
@@ -175,6 +177,7 @@ class _ReservedTablePageState extends State<ReservedTablePage> {
                 .map<Widget>((i) => TableCard(
                       model: i,
                       onTap: () {
+                        api.updateLocalData();
                         Navigator.of(context)
                             .pushNamed('/table-detail/${i.id}');
                       },

@@ -37,7 +37,6 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
 
-
 class TableViewPage extends StatefulWidget {
   TableViewPage({required this.tableId, this.tableName, this.areaName});
   final num tableId;
@@ -51,6 +50,7 @@ class _TableViewPageState extends State<TableViewPage> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   List<Dashboard> _dashboard = <Dashboard>[];
   num companyId = 0;
+  String cartQty = "0";
   @override
   String? selectedValue;
   final List<String> items = [
@@ -92,6 +92,8 @@ class _TableViewPageState extends State<TableViewPage> {
           _dashboard = list.map((model) => Dashboard.fromJson(model)).toList();
         });
       });
+
+      cartQty = _prefs.getString("totalQty") ?? "0";
     } catch (e) {
       print('e');
     }
@@ -150,11 +152,15 @@ class _TableViewPageState extends State<TableViewPage> {
                   ],
                   onChanged: (value) {
                     MenuItems.onChanged(context, value as MenuItem,
-                        widget.tableId, _tblDetail.productList);
-                    // MenuItems.onChanged(context, value as MenuItem,
-                    //     widget.tableId, _tblDetail.productList);
+                        widget.tableId, _tblDetail.productList, companyId);
                     MenuItems.onChanged(context, value as MenuItem,
-                        widget.tableId, _tblDetail.getTableName.toString());
+                        widget.tableId, _tblDetail.productList, companyId);
+                    MenuItems.onChanged(
+                        context,
+                        value as MenuItem,
+                        widget.tableId,
+                        _tblDetail.getTableName.toString(),
+                        companyId);
                   },
                   dropdownStyleData: DropdownStyleData(
                     width: 160,
@@ -181,20 +187,38 @@ class _TableViewPageState extends State<TableViewPage> {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (content) => TableDetailPage(
-                  id: widget.tableId,
+        floatingActionButton: SizedBox(
+          width: 60.0,
+          height: 60.0,
+          child: FloatingActionButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (content) => TableDetailPage(
+                    id: widget.tableId,
+                  ),
                 ),
-              ),
-            );
-          },
-          //tooltip: 'Increment',
-          child: const Icon(Icons.add),
+              );
+            },
+            //tooltip: 'Increment',
+            child: const Icon(Icons.add, size: 40),
+          ),
         ),
+        // floatingActionButton: FloatingActionButton(
+        //   onPressed: () {
+        //     Navigator.push(
+        //       context,
+        //       MaterialPageRoute(
+        //         builder: (content) => TableDetailPage(
+        //           id: widget.tableId,
+        //         ),
+        //       ),
+        //     );
+        //   },
+        //   //tooltip: 'Increment',
+        //   child: const Icon(Icons.add, size:50),
+        // ),
         // floatingActionButton: _tblDetail.tableStatus == 1
         //     ? SpeedDial(
         //         // both default to 16
@@ -273,8 +297,8 @@ class _TableViewPageState extends State<TableViewPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     Container(
-                      padding: EdgeInsets.only(left: 10, right: 10),
-                      margin: EdgeInsets.all(12),
+                      padding: EdgeInsets.only(left: 7, right: 7),
+                      margin: EdgeInsets.all(5),
                       child: new InkResponse(
                         onTap: () {
                           Navigator.push(
@@ -302,17 +326,21 @@ class _TableViewPageState extends State<TableViewPage> {
                                 // this.onChanged(context, value as MenuItem,
                                 //     widget.tableId, _tblDetail.productList);
                               },
-                              child: Text('Xem tạm tính'),
+                              child: Text(
+                                'Xem tạm tính',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.only(left: 10, right: 10),
-                      margin: EdgeInsets.all(12),
+                      padding: EdgeInsets.only(left: 7, right: 7),
+                      margin: EdgeInsets.all(5),
                       child: new InkResponse(
-
                         onTap: () {
                           Navigator.push(
                               context,
@@ -338,36 +366,106 @@ class _TableViewPageState extends State<TableViewPage> {
                                 print('thanh toán');
                                 // this.onChanged(context, value as MenuI
                               },
-                              child: Text('Thanh toán'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.only(left: 10, right: 10),
-                      margin: EdgeInsets.all(12),
-                      child: new InkResponse(
-                        child: new Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 0, 140, 255),
-                                primary: Colors.white,
+                              child: Text(
+                                'Thanh toán',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                ),
                               ),
-                              onPressed: () {
-                                print('thông báo');
-                                // this.onChanged(context, value as MenuI
-                              },
-                              child: Text('Thông báo'),
                             ),
                           ],
                         ),
                       ),
                     ),
+                    Stack(
+                      children: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromARGB(255, 0, 140, 255),
+                            primary: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  2), // Điều chỉnh độ cong của border
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (content) => PrintPage(
+                                  tableId: widget.tableId,
+                                  tableName: _tblDetail.getTableName.toString(),
+                                  areaName: _tblDetail.getAreaName.toString(),
+                                  companyId: companyId,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(
+                                0), // Điều chỉnh khoảng cách nút và chữ
+                            child: Text(
+                              'Thông báo',
+                              style: TextStyle(
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 2,
+                          top: -2,
+                          child: Container(
+                            padding: EdgeInsets.all(
+                                4), // Điều chỉnh khoảng cách số và viền
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.red,
+                            ),
+                            child: Text(
+                              cartQty, // Số lượng hiển thị
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Container(
+                    //   padding: EdgeInsets.only(left: 7, right: 7),
+                    //   margin: EdgeInsets.all(5),
+                    //   child: new InkResponse(
+                    //     child: new Row(
+                    //       mainAxisAlignment: MainAxisAlignment.center,
+                    //       mainAxisSize: MainAxisSize.min,
+                    //       children: <Widget>[
+                    //         TextButton(
+                    //           style: TextButton.styleFrom(
+                    //             backgroundColor:
+                    //                 const Color.fromARGB(255, 0, 140, 255),
+                    //             primary: Colors.white,
+                    //           ),
+                    //           onPressed: () {
+                    //             Navigator.push(
+                    //           context,
+                    //           MaterialPageRoute(
+                    //               builder: (content) => PrintPage(
+                    //                   tableId: widget.tableId,
+                    //                   tableName:
+                    //                       _tblDetail.getTableName.toString(),
+                    //                   areaName:
+                    //                       _tblDetail.getAreaName.toString(),
+                    //                   companyId: companyId)));
+                    //           },
+                    //           child: Text('Thông báo', style: TextStyle(
+                    //               fontSize: 16,
+
+                    //             ),),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                     // Container(
                     //   padding: EdgeInsets.only(left: 10, right: 10),
                     //   margin: EdgeInsets.all(12),
@@ -1192,7 +1290,7 @@ class MenuItems {
   static const List<MenuItem> secondItems = [logout];
 
   // static const home = MenuItem(text: 'Tạm tính', icon: Icons.table_view);
-  // static const payment = MenuItem(text: 'Thanh toán', icon: Icons.payment);
+  static const payment = MenuItem(text: 'Thanh toán', icon: Icons.payment);
   static const cancel = MenuItem(text: 'Hủy đơn', icon: Icons.cancel);
   static const add = MenuItem(text: 'Gộp bàn', icon: Icons.repeat_one);
   static const move = MenuItem(text: 'Chuyển bàn', icon: Icons.swap_horiz);
@@ -1215,9 +1313,8 @@ class MenuItems {
     );
   }
 
-  static onChanged(
-
-      BuildContext context, MenuItem item, num tableId, tableName) {
+  static onChanged(BuildContext context, MenuItem item, num tableId, tableName,
+      companyId) async {
     switch (item) {
       case MenuItems.add:
         //Do something
@@ -1291,6 +1388,19 @@ class MenuItems {
               backgroundColor: Colors.red,
               textColor: Colors.white,
               fontSize: 16.0);
+
+          // update total cart
+          SharedPreferences _prefs = await SharedPreferences.getInstance();
+
+          final response2 = await http.get(
+              Uri.parse(apiURLV2 + '/table/?company_id=$companyId&page=1'));
+          Iterable list = json.decode(response2.body);
+          var _dataList =
+              list.map((model) => tb.Table.fromJson(model)).toList();
+
+          var _save = json.encode(_dataList);
+          print("Data table save : $_save");
+          _prefs.setString("table_info", _save);
           Navigator.push(
             context,
             MaterialPageRoute(

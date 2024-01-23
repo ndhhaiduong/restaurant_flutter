@@ -63,8 +63,11 @@ class _TablePageState extends State<TablePage> {
           isLoading = false;
           Iterable list = json.decode(table_info);
           dataList = list.map((model) => tb.Table.fromJson(model)).toList();
-         // dataList = _dataList;
+          // dataList = _dataList;
           print("get table from local");
+
+          
+
         });
       }
       else {
